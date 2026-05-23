@@ -2,7 +2,7 @@
   "name": "Habit Tracker",
   "short_name": "Habits",
   "description": "Personal daily habit tracking app",
-  "start_url": "/",
+  "start_url": "/habit-tracker/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f7f5f0",
