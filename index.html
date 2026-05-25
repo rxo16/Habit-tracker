@@ -336,6 +336,7 @@ let state = {
   inputVals:    {},
   // Cloud sync
   binId:        localStorage.getItem('binId') || '',
+  secretKey:    localStorage.getItem('secretKey') || '',
   syncStatus:   'idle',   // idle | pending | ok | err
   syncMsg:      '',
 };
@@ -347,52 +348,70 @@ function saveLocal() {
   localStorage.setItem('habits', JSON.stringify(state.habits));
   localStorage.setItem('logs',   JSON.stringify(state.logs));
   localStorage.setItem('theme',  state.theme);
-  localStorage.setItem('binId',  state.binId);
+  localStorage.setItem('binId',      state.binId);
+  localStorage.setItem('secretKey',  state.secretKey);
 }
 
 // ──────────────────────────────────────────────
 //  JSONBIN.IO CLOUD SYNC
-//  Free tier: 10k requests/month, no auth for public bins
-//  Users create a free bin at jsonbin.io and paste their BIN ID
+//  Private bins require X-Master-Key header
 // ──────────────────────────────────────────────
 const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
 
+function syncHeaders(includeContent) {
+  const h = {};
+  if (includeContent) h['Content-Type'] = 'application/json';
+  if (state.secretKey) h['X-Master-Key'] = state.secretKey;
+  h['X-Bin-Versioning'] = 'false';
+  return h;
+}
+
 async function cloudPush() {
-  if (!state.binId) return;
+  if (!state.binId) { state.syncStatus = 'err'; state.syncMsg = 'Enter your Bin ID first'; render(); return; }
+  if (!state.secretKey) { state.syncStatus = 'err'; state.syncMsg = 'Enter your Secret Key first'; render(); return; }
   state.syncStatus = 'pending'; render();
   try {
     const payload = { habits: state.habits, logs: state.logs };
-    const res = await fetch(`${JSONBIN_BASE}/${state.binId}`, {
+    const res = await fetch(`${JSONBIN_BASE}/${state.binId.trim()}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Bin-Versioning': 'false' },
+      headers: syncHeaders(true),
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}${errText ? ': ' + errText.slice(0,80) : ''}`);
+    }
     state.syncStatus = 'ok';
-    state.syncMsg = 'Synced ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+    state.syncMsg = 'Saved to cloud · ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
   } catch (e) {
     state.syncStatus = 'err';
-    state.syncMsg = 'Sync failed: ' + e.message;
+    state.syncMsg = e.message;
   }
   render();
 }
 
 async function cloudPull() {
-  if (!state.binId) return;
+  if (!state.binId) { state.syncStatus = 'err'; state.syncMsg = 'Enter your Bin ID first'; render(); return; }
+  if (!state.secretKey) { state.syncStatus = 'err'; state.syncMsg = 'Enter your Secret Key first'; render(); return; }
   state.syncStatus = 'pending'; render();
   try {
-    const res = await fetch(`${JSONBIN_BASE}/${state.binId}/latest`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(`${JSONBIN_BASE}/${state.binId.trim()}/latest`, {
+      headers: syncHeaders(false),
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}${errText ? ': ' + errText.slice(0,80) : ''}`);
+    }
     const json = await res.json();
     const data = json.record;
-    if (data.habits) state.habits = data.habits;
-    if (data.logs)   state.logs   = data.logs;
+    if (data && data.habits) state.habits = data.habits;
+    if (data && data.logs)   state.logs   = data.logs;
     saveLocal();
     state.syncStatus = 'ok';
-    state.syncMsg = 'Loaded from cloud';
+    state.syncMsg = 'Loaded from cloud · ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
   } catch (e) {
     state.syncStatus = 'err';
-    state.syncMsg = 'Pull failed: ' + e.message;
+    state.syncMsg = e.message;
   }
   render();
 }
@@ -761,11 +780,6 @@ function buildDashboard(today) {
 //  BUILD: SETTINGS
 // ──────────────────────────────────────────────
 function buildSettings() {
-  const syncDotClass = state.syncStatus === 'ok' ? 'ok' : state.syncStatus === 'err' ? 'err' : state.syncStatus === 'pending' ? 'pending' : 'err';
-  const syncLabel = state.syncStatus === 'idle'
-    ? (state.binId ? 'Ready to sync' : 'Not configured')
-    : state.syncMsg;
-
   const rows = state.habits.map(h => `
     <div class="card" style="padding:12px 16px;margin-bottom:10px">
       <div class="habit-manage-row">
@@ -786,20 +800,37 @@ function buildSettings() {
       <!-- Cloud Sync Card -->
       <div class="sync-card">
         <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:2px">☁️ Cloud Sync</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Free sync via JSONBin.io — your data persists across devices & code changes.</div>
-        <div style="font-size:11px;color:var(--text2);line-height:1.6;background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px">
-          1. Go to <b>jsonbin.io</b> → Sign up free → Create a Bin<br>
-          2. Copy your <b>Bin ID</b> (looks like <code>64ab…</code>)<br>
-          3. Paste it below and click <b>Pull</b> to load, or <b>Push</b> to save
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Your data persists across devices via JSONBin.io (free).</div>
+
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:4px">Bin ID</div>
+        <input class="form-input" placeholder="e.g. 64ab1234abc567def890" value="${state.binId}"
+          style="margin-bottom:10px;padding:10px 12px;font-size:13px;font-family:monospace"
+          oninput="state.binId=this.value.trim();saveLocal()" />
+
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:4px">Secret Key <span style="font-weight:400;text-transform:none;letter-spacing:0">(from API Keys page)</span></div>
+        <input class="form-input" type="password" placeholder="$2b$10$…" value="${state.secretKey}"
+          style="margin-bottom:10px;padding:10px 12px;font-size:13px;font-family:monospace"
+          oninput="state.secretKey=this.value.trim();saveLocal()" />
+
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button onclick="cloudPull()" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text)">↓ Pull from cloud</button>
+          <button onclick="cloudPush()" style="flex:1;background:var(--text);border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;color:var(--bg)">↑ Push to cloud</button>
         </div>
-        <div class="sync-input-row">
-          <input class="form-input" id="bin-id-input" placeholder="Paste Bin ID…" value="${state.binId}" style="flex:1;padding:10px 12px;font-size:13px" oninput="state.binId=this.value;localStorage.setItem('binId',this.value)" />
-          <button onclick="cloudPull()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--text)">↓ Pull</button>
-          <button onclick="cloudPush()" style="background:var(--text);border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--bg)">↑ Push</button>
-        </div>
+
         <div class="sync-status">
-          <div class="sync-dot ${state.binId ? syncDotClass : 'err'}" style="${!state.binId?'background:var(--text3)':''}"></div>
-          <span style="font-size:12px;color:var(--text2)">${syncLabel}</span>
+          <div class="sync-dot ${state.syncStatus === 'ok' ? 'ok' : state.syncStatus === 'err' ? 'err' : state.syncStatus === 'pending' ? 'pending' : ''}"
+            style="${state.syncStatus === 'idle' ? 'background:var(--text3)' : ''}"></div>
+          <span style="font-size:12px;color:var(--text2);word-break:break-word">${
+            state.syncStatus === 'idle'
+              ? (state.binId && state.secretKey ? 'Ready — click Push or Pull' : 'Enter Bin ID and Secret Key above')
+              : state.syncMsg
+          }</span>
+        </div>
+
+        <div style="margin-top:10px;background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--text2);line-height:1.7">
+          <b>Where to find these:</b><br>
+          · <b>Bin ID</b> → jsonbin.io → Bins → click your bin → copy ID from URL<br>
+          · <b>Secret Key</b> → jsonbin.io → API Keys → copy your Master Key
         </div>
       </div>
 
