@@ -3,94 +3,172 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#ffffff" id="theme-color-meta" />
+  <meta name="theme-color" content="#f7f5f0" id="theme-color-meta" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Habits" />
   <title>Habit Tracker</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
     :root {
-      --bg: #ffffff; --surface: #fff; --surface2: #f2f2f2; --border: #e5e5e5;
-      --text: #1a1816; --text2: #888; --text3: #bbb;
-      --nav-bg: #fff; --nav-border: #e5e5e5;
-      --toggle-off: #e0e0e0; --input-bg: #ffffff;
-      --card-bg: #fff; --modal-bg: #fff;
-      --seg-bg: #f2f2f2; --seg-active: #fff;
-      --dot-empty: #e8e8e8;
-      --green: #16a34a; --red: #dc2626; --amber: #d97706;
+      --bg: #f7f5f0; --surface: #fff; --surface2: #ece9e1; --border: #e0dcd4;
+      --text: #1a1816; --text2: #888; --text3: #ccc;
+      --nav-bg: #fff; --nav-border: #e8e4dc;
+      --input-bg: #f7f5f0; --card-bg: #fff; --modal-bg: #fff;
+      --seg-bg: #f0ede6; --seg-active: #fff;
+      --dot-empty: #ece9e1;
+      --green: #16a34a; --amber: #d97706; --red: #dc2626;
+      --nb-h: 68px; /* nav bar height */
     }
     body.dark {
       --bg: #111; --surface: #1e1e1b; --surface2: #2a2a27; --border: #333;
       --text: #e8e6e0; --text2: #666; --text3: #444;
       --nav-bg: #1e1e1b; --nav-border: #2a2a27;
-      --toggle-off: #333; --input-bg: #111;
-      --card-bg: #1e1e1b; --modal-bg: #1e1e1b;
-      --seg-bg: #111; --seg-active: #2a2a27;
-      --dot-empty: #2a2a27;
+      --input-bg: #111; --card-bg: #1e1e1b; --modal-bg: #1e1e1b;
+      --seg-bg: #111; --seg-active: #2a2a27; --dot-empty: #2a2a27;
     }
-    html, body { height: 100%; overflow: hidden; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
-    #app { max-width: 430px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; background: var(--bg); position: relative; overflow: hidden; }
-    .page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .topbar { padding: 52px 20px 12px; background: var(--bg); flex-shrink: 0; }
+
+    html { height: 100%; }
+    body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+      overflow: hidden;
+    }
+
+    /* ── Shell: fixed navbar at bottom, page fills rest ── */
+    #app {
+      position: fixed;
+      inset: 0;
+      max-width: 430px;
+      margin: 0 auto;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Page area fills space above fixed nav */
+    #page-area {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .page {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
+    .page.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .topbar {
+      padding: env(safe-area-inset-top, 44px) 20px 12px;
+      background: var(--bg);
+      flex-shrink: 0;
+    }
     .topbar-row { display: flex; align-items: center; justify-content: space-between; }
     .app-title { font-family: 'DM Serif Display', serif; font-size: 28px; letter-spacing: -0.5px; }
     .date-sub { font-size: 11px; color: var(--text2); margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
-    .content { flex: 1; overflow-y: auto; padding: 8px 20px 20px; -webkit-overflow-scrolling: touch; }
-    .navbar { flex-shrink: 0; background: var(--nav-bg); border-top: 1px solid var(--nav-border); display: flex; padding: 10px 0 28px; }
-    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; padding: 8px 0 6px; color: var(--text3); font-family: 'DM Sans', sans-serif; font-size: 10px; letter-spacing: 0.3px; text-transform: uppercase; transition: color 0.2s; -webkit-tap-highlight-color: transparent; }
+
+    .page-content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 20px 20px;
+    }
+
+    /* ── Bottom Navbar ── */
+    #navbar {
+      flex-shrink: 0;
+      background: var(--nav-bg);
+      border-top: 1px solid var(--nav-border);
+      display: flex;
+      /* safe area for iPhone home indicator */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      /* minimum tap height */
+      min-height: var(--nb-h);
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 10px 0;
+      color: var(--text3);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
     .nav-btn.active { color: var(--text); }
-    .nav-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
-    .nav-icon svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-icon { font-size: 20px; line-height: 1; }
+
+    /* ── Cards ── */
     .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
-    .habit-card { display: flex; align-items: center; gap: 12px; }
+    .habit-card-inner { display: flex; align-items: center; gap: 12px; }
     .habit-icon-bg { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
     .habit-info { flex: 1; min-width: 0; }
     .habit-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .habit-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
-    .habit-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .progress-bar-bg { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
 
-    /* Status selector for non-measurable */
-    .status-sel { display: flex; gap: 4px; }
+    /* Status buttons */
+    .status-sel { display: flex; gap: 4px; flex-shrink: 0; }
     .status-btn { padding: 5px 9px; border-radius: 8px; border: 1.5px solid var(--border); background: none; cursor: pointer; font-size: 11px; font-family: 'DM Sans', sans-serif; color: var(--text2); font-weight: 500; transition: all 0.15s; white-space: nowrap; }
     .status-btn.s-done { border-color: #16a34a; background: #dcfce7; color: #15803d; }
     .status-btn.s-skip { border-color: #d97706; background: #fef3c7; color: #b45309; }
     .status-btn.s-fail { border-color: #dc2626; background: #fee2e2; color: #b91c1c; }
 
-    /* Measurable text input */
-    .measure-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    /* Measure input */
+    .measure-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
     .measure-input { width: 72px; border: 1.5px solid var(--border); border-radius: 10px; padding: 6px 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; background: var(--input-bg); color: var(--text); text-align: center; outline: none; transition: border-color 0.2s; }
     .measure-input:focus { border-color: #2563eb; }
     .measure-unit { font-size: 10px; color: var(--text3); }
-    .progress-bar-bg { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 6px; overflow: hidden; }
-    .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
-    .section-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text2); margin-bottom: 10px; margin-top: 4px; }
+
+    /* Date nav */
+    .date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .date-nav-btn { background: var(--surface2); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; color: var(--text); }
+    .date-nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .date-nav-label { font-size: 13px; font-weight: 600; color: var(--text); }
+
     .all-done-banner { background: #d1fae5; border-radius: 12px; padding: 10px 14px; font-size: 13px; color: #065f46; font-weight: 500; margin-top: 10px; }
 
-    /* Date navigator */
-    .date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .date-nav-btn { background: var(--surface2); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
-    .date-nav-label { font-size: 13px; font-weight: 600; color: var(--text); }
-    .date-today-chip { font-size: 11px; background: var(--text); color: var(--bg); border-radius: 10px; padding: 2px 8px; margin-left: 6px; }
+    .section-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text2); margin-bottom: 10px; margin-top: 4px; }
 
-    /* Tabs */
+    /* Seg tabs */
     .seg-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--surface2); border-radius: 12px; padding: 4px; }
     .seg-tab { flex: 1; padding: 8px; border-radius: 9px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; transition: all 0.2s; background: none; color: var(--text2); }
     .seg-tab.active { background: var(--seg-active); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
-    /* Progress page stats */
+    /* Stat cards */
     .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
     .stat-card { background: var(--card-bg); border-radius: 14px; padding: 12px 8px; text-align: center; border: 1px solid var(--border); }
     .stat-num { font-size: 22px; font-family: 'DM Serif Display', serif; font-weight: 600; }
     .stat-label { font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
-    /* Progress habit card */
+    /* Progress habit cards */
     .prog-habit-card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
     .prog-habit-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
     .prog-habit-name { font-size: 15px; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -106,10 +184,6 @@
     .dash-overview-title { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px; }
     .dash-overview-score { font-size: 48px; font-family: 'DM Serif Display', serif; line-height: 1; }
     .dash-overview-sub { font-size: 12px; opacity: 0.65; margin-top: 4px; }
-    .dash-growth { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; margin-top: 8px; padding: 4px 10px; border-radius: 20px; }
-    .dash-growth.up { background: rgba(22,163,74,0.2); color: #4ade80; }
-    .dash-growth.down { background: rgba(220,38,38,0.2); color: #f87171; }
-    .dash-growth.neutral { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
     .dash-periods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .dash-period-card { background: var(--card-bg); border-radius: 14px; padding: 14px; border: 1px solid var(--border); }
     .dash-period-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
@@ -123,25 +197,37 @@
     .dash-habit-row:last-child { border-bottom: none; }
     .dash-habit-dots { display: flex; gap: 3px; }
     .dash-habit-dot { width: 10px; height: 10px; border-radius: 2px; }
-    .dash-habit-pct { font-size: 12px; font-weight: 600; min-width: 36px; text-align: right; color: var(--text2); }
+    .dash-habit-pct { font-size: 12px; font-weight: 600; min-width: 36px; text-align: right; }
 
     /* Settings */
     .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); }
     .settings-label { font-size: 15px; font-weight: 500; }
     .settings-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
-
-    /* Modal */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
-    .modal { background: var(--modal-bg); border-radius: 24px 24px 0 0; padding: 24px 20px 40px; width: 100%; max-width: 430px; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    .modal-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 20px; }
-    .form-group { margin-bottom: 16px; }
-    .form-label { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text2); margin-bottom: 6px; display: block; }
-    .form-input { width: 100%; height: 48px; border: 1.5px solid var(--border); border-radius: 12px; padding: 0 14px; font-size: 16px; font-family: 'DM Sans', sans-serif; background: var(--input-bg); color: var(--text); outline: none; transition: border-color 0.2s; -webkit-appearance: none; appearance: none; display: block; }
-    .form-input:focus { border-color: #2563eb; }
-    .form-row { display: flex; gap: 8px; }
     .seg-control { display: flex; background: var(--seg-bg); border-radius: 10px; padding: 3px; gap: 2px; }
     .seg-btn { flex: 1; padding: 8px 6px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; background: none; color: var(--text2); transition: all 0.15s; }
     .seg-btn.active { background: var(--seg-active); color: var(--text); font-weight: 500; }
+    .habit-manage-row { display: flex; align-items: center; gap: 10px; }
+    .icon-action { background: none; border: none; cursor: pointer; font-size: 18px; padding: 6px; border-radius: 8px; }
+
+    /* Cloud sync */
+    .sync-card { background: var(--card-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border); margin-bottom: 16px; }
+    .sync-status { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 10px; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .sync-dot.ok { background: var(--green); }
+    .sync-dot.err { background: var(--red); }
+    .sync-dot.pending { background: var(--amber); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .sync-input-row { display: flex; gap: 8px; margin-top: 10px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+    .modal { background: var(--modal-bg); border-radius: 24px 24px 0 0; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); width: 100%; max-width: 430px; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .modal-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text2); margin-bottom: 6px; display: block; }
+    .form-input { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 15px; font-family: 'DM Sans', sans-serif; background: var(--input-bg); color: var(--text); outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+    .form-input:focus { border-color: #2563eb; }
+    .form-row { display: flex; gap: 8px; }
     .color-grid { display: flex; flex-wrap: wrap; gap: 10px; }
     .color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s; }
     .color-dot.selected { border-color: var(--text); transform: scale(1.2); }
@@ -151,92 +237,179 @@
     .primary-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; background: var(--text); color: var(--bg); transition: opacity 0.2s; }
     .primary-btn:disabled { opacity: 0.4; }
     .ghost-btn { background: none; border: 1.5px solid var(--border); color: var(--text); padding: 12px 16px; border-radius: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; }
-    .habit-manage-row { display: flex; align-items: center; gap: 10px; }
-    .icon-action { background: none; border: none; cursor: pointer; font-size: 18px; padding: 6px; border-radius: 8px; }
+
+    /* Notif toast */
     .notif { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 22px; border-radius: 20px; font-size: 13px; z-index: 200; white-space: nowrap; animation: slideDown 0.2s; }
     @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-    .empty-state { text-align: center; padding: 48px 20px; color: var(--text3); }
-    .empty-icon { font-size: 52px; margin-bottom: 12px; }
-    .add-fab { position: absolute; bottom: 90px; right: 20px; width: 54px; height: 54px; border-radius: 50%; background: var(--text); color: var(--bg); border: none; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 15; }
+
+    /* FAB */
+    .add-fab { position: absolute; bottom: calc(var(--nb-h) + 16px); right: 20px; width: 54px; height: 54px; border-radius: 50%; background: var(--text); color: var(--bg); border: none; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 15; }
+
     .theme-toggle-btn { background: none; border: 1.5px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 18px; cursor: pointer; }
     .about-card { background: var(--card-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border); margin-top: 20px; }
     select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text3); }
+    .empty-icon { font-size: 52px; margin-bottom: 12px; }
     ::-webkit-scrollbar { width: 0; }
-    .prog-big-stat { font-size: 28px; font-family: 'DM Serif Display', serif; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app">
+  <div id="page-area">
+    <div class="page active" id="page-journal"></div>
+    <div class="page" id="page-progress"></div>
+    <div class="page" id="page-dashboard"></div>
+    <div class="page" id="page-settings"></div>
+  </div>
+  <nav id="navbar">
+    <button class="nav-btn active" id="nb-journal" onclick="setPage('journal')"><span class="nav-icon">📝</span>Journal</button>
+    <button class="nav-btn" id="nb-progress" onclick="setPage('progress')"><span class="nav-icon">📈</span>Progress</button>
+    <button class="nav-btn" id="nb-dashboard" onclick="setPage('dashboard')"><span class="nav-icon">📊</span>Dashboard</button>
+    <button class="nav-btn" id="nb-settings" onclick="setPage('settings')"><span class="nav-icon">⚙️</span>Settings</button>
+  </nav>
+</div>
 
 <script>
+// ──────────────────────────────────────────────
+//  CONSTANTS
+// ──────────────────────────────────────────────
 const COLORS = ["#2563eb","#7c3aed","#059669","#0891b2","#d97706","#dc2626","#0d9488","#9333ea","#c2410c","#16a34a","#0284c7","#db2777","#ca8a04","#15803d","#b45309"];
-const ICONS = ["🏃","🧘","📖","💧","✍️","🍎","💪","🎯","🌙","☀️","🧠","❤️","🎨","🎵","🌿","⚡","🔥","🏋️","🚴","🧹"];
+const ICONS  = ["🏃","🧘","📖","💧","✍️","🍎","💪","🎯","🌙","☀️","🧠","❤️","🎨","🎵","🌿","⚡","🔥","🏋️","🚴","🧹"];
 
 const DEFAULT_HABITS = [
-  {id:1,name:"Morning Run",type:"measurable",frequency:"daily",unit:"km",target:5,reminder:"06:30",color:"#2563eb",icon:"🏃"},
-  {id:2,name:"Meditate",type:"non-measurable",frequency:"daily",unit:"",target:0,reminder:"07:00",color:"#7c3aed",icon:"🧘"},
-  {id:3,name:"Read",type:"measurable",frequency:"daily",unit:"pages",target:30,reminder:"21:00",color:"#059669",icon:"📖"},
-  {id:4,name:"Drink Water",type:"measurable",frequency:"daily",unit:"glasses",target:8,reminder:"09:00",color:"#0891b2",icon:"💧"},
-  {id:5,name:"Journaling",type:"non-measurable",frequency:"daily",unit:"",target:0,reminder:"22:00",color:"#d97706",icon:"✍️"},
+  {id:1,name:"Morning Run",  type:"measurable",    frequency:"daily",unit:"km",    target:5, reminder:"06:30",color:"#2563eb",icon:"🏃"},
+  {id:2,name:"Meditate",     type:"non-measurable",frequency:"daily",unit:"",     target:0, reminder:"07:00",color:"#7c3aed",icon:"🧘"},
+  {id:3,name:"Read",         type:"measurable",    frequency:"daily",unit:"pages",target:30,reminder:"21:00",color:"#059669",icon:"📖"},
+  {id:4,name:"Drink Water",  type:"measurable",    frequency:"daily",unit:"glasses",target:8,reminder:"09:00",color:"#0891b2",icon:"💧"},
+  {id:5,name:"Journaling",   type:"non-measurable",frequency:"daily",unit:"",     target:0, reminder:"22:00",color:"#d97706",icon:"✍️"},
 ];
 
-let state = {
-  habits: JSON.parse(localStorage.getItem('habits') || 'null') || DEFAULT_HABITS,
-  logs: JSON.parse(localStorage.getItem('logs') || '{}'),
-  theme: localStorage.getItem('theme') || 'light',
-  page: 'journal',
-  progTab: '7days',
-  viewDate: getTodayStr(),
-  showAddHabit: false,
-  editHabit: null,
-  notification: null,
-  newHabit: {name:'',type:'non-measurable',frequency:'daily',unit:'',target:'',reminder:'08:00',color:'#2563eb',icon:'🎯'},
-  inputVals: {}
-};
-
-function savePersist() {
-  localStorage.setItem('habits', JSON.stringify(state.habits));
-  localStorage.setItem('logs', JSON.stringify(state.logs));
-  localStorage.setItem('theme', state.theme);
+// ──────────────────────────────────────────────
+//  DATE HELPERS  (LOCAL timezone, no UTC shift)
+// ──────────────────────────────────────────────
+function localDateStr(date) {
+  // Returns YYYY-MM-DD in LOCAL time — avoids UTC off-by-one
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
-function getTodayStr() { return new Date().toISOString().split('T')[0]; }
+function getTodayStr() { return localDateStr(new Date()); }
 
-function getDateStr(date) { return date.toISOString().split('T')[0]; }
+function addDays(dateStr, n) {
+  // Parse the date as local midnight, add n days
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + n);
+  return localDateStr(date);
+}
 
-function getDaysArray(endDate, count) {
+function getDaysArray(endDateStr, count) {
   const days = [];
   for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(endDate);
-    d.setDate(d.getDate() - i);
-    days.push(getDateStr(d));
+    days.push(addDays(endDateStr, -i));
   }
   return days;
 }
 
 function formatDate(str) {
-  const d = new Date(str + 'T00:00:00');
-  return d.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
+  const [y, m, d] = str.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function isToday(str) { return str === getTodayStr(); }
+// ──────────────────────────────────────────────
+//  STATE
+// ──────────────────────────────────────────────
+let state = {
+  habits:       JSON.parse(localStorage.getItem('habits') || 'null') || DEFAULT_HABITS,
+  logs:         JSON.parse(localStorage.getItem('logs')   || '{}'),
+  theme:        localStorage.getItem('theme') || 'light',
+  page:         'journal',
+  progTab:      '7days',
+  viewDate:     getTodayStr(),
+  showAddHabit: false,
+  editHabit:    null,
+  notification: null,
+  newHabit:     {name:'',type:'non-measurable',frequency:'daily',unit:'',target:'',reminder:'08:00',color:'#2563eb',icon:'🎯'},
+  inputVals:    {},
+  // Cloud sync
+  binId:        localStorage.getItem('binId') || '',
+  syncStatus:   'idle',   // idle | pending | ok | err
+  syncMsg:      '',
+};
 
-function calcStreak(habitId) {
-  let streak = 0;
-  const today = new Date();
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(today); d.setDate(today.getDate() - i);
-    const key = getDateStr(d);
-    const log = state.logs[habitId]?.[key];
-    if (log && isDone(habitId, key)) streak++;
-    else if (i > 0) break;
+// ──────────────────────────────────────────────
+//  PERSIST
+// ──────────────────────────────────────────────
+function saveLocal() {
+  localStorage.setItem('habits', JSON.stringify(state.habits));
+  localStorage.setItem('logs',   JSON.stringify(state.logs));
+  localStorage.setItem('theme',  state.theme);
+  localStorage.setItem('binId',  state.binId);
+}
+
+// ──────────────────────────────────────────────
+//  JSONBIN.IO CLOUD SYNC
+//  Free tier: 10k requests/month, no auth for public bins
+//  Users create a free bin at jsonbin.io and paste their BIN ID
+// ──────────────────────────────────────────────
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
+
+async function cloudPush() {
+  if (!state.binId) return;
+  state.syncStatus = 'pending'; render();
+  try {
+    const payload = { habits: state.habits, logs: state.logs };
+    const res = await fetch(`${JSONBIN_BASE}/${state.binId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Bin-Versioning': 'false' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    state.syncStatus = 'ok';
+    state.syncMsg = 'Synced ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+  } catch (e) {
+    state.syncStatus = 'err';
+    state.syncMsg = 'Sync failed: ' + e.message;
   }
-  return streak;
+  render();
 }
 
-function isDone(habitId, dateKey) {
-  const log = state.logs[habitId]?.[dateKey];
+async function cloudPull() {
+  if (!state.binId) return;
+  state.syncStatus = 'pending'; render();
+  try {
+    const res = await fetch(`${JSONBIN_BASE}/${state.binId}/latest`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    const data = json.record;
+    if (data.habits) state.habits = data.habits;
+    if (data.logs)   state.logs   = data.logs;
+    saveLocal();
+    state.syncStatus = 'ok';
+    state.syncMsg = 'Loaded from cloud';
+  } catch (e) {
+    state.syncStatus = 'err';
+    state.syncMsg = 'Pull failed: ' + e.message;
+  }
+  render();
+}
+
+// Debounced push — fires 2s after last change
+let pushTimer = null;
+function schedulePush() {
+  if (!state.binId) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => cloudPush(), 2000);
+}
+
+// ──────────────────────────────────────────────
+//  LOGIC HELPERS
+// ──────────────────────────────────────────────
+function isDone(habitId, dateStr) {
+  const log = state.logs[habitId]?.[dateStr];
   if (!log) return false;
   const h = state.habits.find(x => x.id === habitId);
   if (!h) return false;
@@ -244,8 +417,8 @@ function isDone(habitId, dateKey) {
   return log.value !== undefined && log.value !== '' && parseFloat(log.value) > 0;
 }
 
-function getStatus(habitId, dateKey) {
-  const log = state.logs[habitId]?.[dateKey];
+function getStatus(habitId, dateStr) {
+  const log = state.logs[habitId]?.[dateStr];
   if (!log) return null;
   const h = state.habits.find(x => x.id === habitId);
   if (!h) return null;
@@ -254,15 +427,24 @@ function getStatus(habitId, dateKey) {
   return null;
 }
 
+function calcStreak(habitId) {
+  let streak = 0;
+  const today = getTodayStr();
+  for (let i = 0; i < 365; i++) {
+    const d = addDays(today, -i);
+    if (isDone(habitId, d)) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+
 function calcHabitStats(habitId, days) {
   const h = state.habits.find(x => x.id === habitId);
   if (!h) return {};
-  let done = 0, skipped = 0, failed = 0, total = 0;
-  let sum = 0, valCount = 0;
+  let done = 0, skipped = 0, failed = 0, sum = 0, valCount = 0;
   days.forEach(d => {
     const log = state.logs[habitId]?.[d];
     if (!log) return;
-    total++;
     if (h.type === 'non-measurable') {
       if (log.status === 'done') done++;
       else if (log.status === 'skip') skipped++;
@@ -274,174 +456,193 @@ function calcHabitStats(habitId, days) {
       }
     }
   });
-  return { done, skipped, failed, total, avg: valCount > 0 ? (sum / valCount).toFixed(1) : 0, streak: calcStreak(habitId) };
+  return { done, skipped, failed, avg: valCount > 0 ? (sum / valCount).toFixed(1) : 0, streak: calcStreak(habitId) };
 }
 
 function calcPeriodScore(days) {
   if (!state.habits.length || !days.length) return 0;
   let totalDone = 0, possible = 0;
-  state.habits.forEach(h => {
-    days.forEach(d => {
-      possible++;
-      if (isDone(h.id, d)) totalDone++;
-    });
-  });
+  state.habits.forEach(h => { days.forEach(d => { possible++; if (isDone(h.id, d)) totalDone++; }); });
   return possible > 0 ? Math.round(totalDone / possible * 100) : 0;
 }
 
+// ──────────────────────────────────────────────
+//  MUTATIONS
+// ──────────────────────────────────────────────
 function notify(msg) {
   state.notification = msg;
   render();
   setTimeout(() => { state.notification = null; render(); }, 2500);
 }
 
-function logHabit(habitId, date, value) {
+function logHabit(habitId, dateStr, value) {
   if (!state.logs[habitId]) state.logs[habitId] = {};
-  state.logs[habitId][date] = value;
-  savePersist(); render();
+  state.logs[habitId][dateStr] = value;
+  saveLocal();
+  schedulePush();
+  render();
 }
 
-function setPage(p) { state.page = p; render(); }
+// ──────────────────────────────────────────────
+//  APPLY THEME
+// ──────────────────────────────────────────────
 function applyTheme() {
   document.body.className = state.theme === 'dark' ? 'dark' : '';
-  document.getElementById('theme-color-meta').content = state.theme === 'dark' ? '#161614' : '#ffffff';
+  document.getElementById('theme-color-meta').content = state.theme === 'dark' ? '#161614' : '#f7f5f0';
 }
 
-// ---- RENDER ----
+// ──────────────────────────────────────────────
+//  PAGE SWITCHING (no innerHTML on #app)
+// ──────────────────────────────────────────────
+function setPage(p) {
+  state.page = p;
+  // update navbar
+  ['journal','progress','dashboard','settings'].forEach(id => {
+    document.getElementById('nb-' + id).classList.toggle('active', id === p);
+  });
+  // update page visibility
+  ['journal','progress','dashboard','settings'].forEach(id => {
+    document.getElementById('page-' + id).classList.toggle('active', id === p);
+  });
+  renderCurrentPage();
+}
+
+function renderCurrentPage() {
+  const today = getTodayStr();
+  const p = state.page;
+  const el = document.getElementById('page-' + p);
+  if (p === 'journal')   el.innerHTML = buildJournal(today);
+  if (p === 'progress')  el.innerHTML = buildProgress();
+  if (p === 'dashboard') el.innerHTML = buildDashboard(today);
+  if (p === 'settings')  el.innerHTML = buildSettings();
+}
+
 function render() {
   applyTheme();
-  const app = document.getElementById('app');
-  const today = getTodayStr();
-  const todayLabel = new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  let pageHTML = '';
-  if (state.page === 'journal') pageHTML = renderJournal(today, todayLabel);
-  else if (state.page === 'progress') pageHTML = renderProgress();
-  else if (state.page === 'dashboard') pageHTML = renderDashboard();
-  else if (state.page === 'settings') pageHTML = renderSettings();
+  // Notification toast (outside pages)
+  let toast = document.getElementById('notif-toast');
+  if (state.notification) {
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'notif-toast';
+      toast.className = 'notif';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = state.notification;
+  } else {
+    if (toast) toast.remove();
+  }
 
-  const modal = state.showAddHabit ? renderHabitForm(state.newHabit, 'new', 'Add New Habit') :
-    state.editHabit ? renderHabitForm(state.editHabit, 'edit', 'Edit Habit') : '';
+  // Modal
+  let existing = document.getElementById('modal-root');
+  if (existing) existing.remove();
+  if (state.showAddHabit || state.editHabit) {
+    const wrap = document.createElement('div');
+    wrap.id = 'modal-root';
+    wrap.innerHTML = buildHabitForm(
+      state.editHabit || state.newHabit,
+      state.editHabit ? 'edit' : 'new',
+      state.editHabit ? 'Edit Habit' : 'Add New Habit'
+    );
+    document.body.appendChild(wrap);
+  }
 
-  app.innerHTML = `
-    ${state.notification ? `<div class="notif">${state.notification}</div>` : ''}
-    <div class="page">${pageHTML}</div>
-    <nav class="navbar">
-      <button class="nav-btn ${state.page==='journal'?'active':''}" onclick="setPage('journal')">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>Journal
-      </button>
-      <button class="nav-btn ${state.page==='progress'?'active':''}" onclick="setPage('progress')">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>Progress
-      </button>
-      <button class="nav-btn ${state.page==='dashboard'?'active':''}" onclick="setPage('dashboard')">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>Dashboard
-      </button>
-      <button class="nav-btn ${state.page==='settings'?'active':''}" onclick="setPage('settings')">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings
-      </button>
-    </nav>
-    ${modal}
-  `;
+  renderCurrentPage();
 }
 
-// ---- JOURNAL PAGE ----
-function renderJournal(today, todayLabel) {
-  const viewDate = state.viewDate;
-  const isViewToday = isToday(viewDate);
-
-  const allDone = state.habits.length > 0 && state.habits.every(h => isDone(h.id, viewDate));
+// ──────────────────────────────────────────────
+//  BUILD: JOURNAL
+// ──────────────────────────────────────────────
+function buildJournal(today) {
+  const vd = state.viewDate;
+  const isToday = vd === today;
+  const todayLabel = new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' });
+  const allDone = state.habits.length > 0 && state.habits.every(h => isDone(h.id, vd));
+  const canGoNext = addDays(vd, 1) <= today;
 
   const habitCards = state.habits.map(h => {
-    const log = state.logs[h.id]?.[viewDate];
-    const status = getStatus(h.id, viewDate);
-    const val = state.inputVals[h.id + '_' + viewDate] ?? log?.value ?? '';
+    const log = state.logs[h.id]?.[vd];
+    const status = getStatus(h.id, vd);
+    const valKey = h.id + '_' + vd;
+    const val = state.inputVals[valKey] ?? log?.value ?? '';
     const pct = h.type === 'measurable' && h.target ? Math.min(100, (parseFloat(val) || 0) / h.target * 100) : 0;
     const streak = calcStreak(h.id);
 
     let controls;
     if (h.type === 'non-measurable') {
       controls = `<div class="status-sel">
-        <button class="status-btn ${status==='done'?'s-done':''}" onclick="setStatus(${h.id},'done','${viewDate}')">✓</button>
-        <button class="status-btn ${status==='skip'?'s-skip':''}" onclick="setStatus(${h.id},'skip','${viewDate}')">~</button>
-        <button class="status-btn ${status==='fail'?'s-fail':''}" onclick="setStatus(${h.id},'fail','${viewDate}')">✗</button>
+        <button class="status-btn ${status==='done'?'s-done':''}" onclick="setStatus(${h.id},'done','${vd}')">✓</button>
+        <button class="status-btn ${status==='skip'?'s-skip':''}" onclick="setStatus(${h.id},'skip','${vd}')">~</button>
+        <button class="status-btn ${status==='fail'?'s-fail':''}" onclick="setStatus(${h.id},'fail','${vd}')">✗</button>
       </div>`;
     } else {
       controls = `<div class="measure-wrap">
         <input class="measure-input" type="number" min="0" placeholder="/${h.target}" value="${val}"
-          oninput="updateMeasure(${h.id},this.value,'${viewDate}')" />
+          oninput="updateMeasure(${h.id},this.value,'${vd}')" />
         <span class="measure-unit">${h.unit}</span>
       </div>`;
     }
 
     return `<div class="card">
-      <div class="habit-card">
+      <div class="habit-card-inner">
         <div class="habit-icon-bg" style="background:${h.color}20">${h.icon}</div>
         <div class="habit-info">
           <div class="habit-name">${h.name}</div>
           <div class="habit-meta">${h.frequency} · ${streak > 0 ? '🔥 ' + streak + 'd streak' : 'No streak yet'}</div>
-          ${h.type === 'measurable' ? `<div class="progress-bar-bg"><div class="progress-bar-fill" data-prog-id="${h.id}" style="width:${pct}%;background:${h.color}"></div></div>` : ''}
+          ${h.type === 'measurable' ? `<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${h.color}"></div></div>` : ''}
         </div>
-        <div class="habit-controls">${controls}</div>
+        <div>${controls}</div>
       </div>
     </div>`;
   }).join('');
 
-  // date nav - forward is disabled only when already viewing today
-  const canGoNext = !isViewToday;
-
   return `
     <div class="topbar">
       <div class="topbar-row">
-        <div><div class="app-title">Journal</div><div class="date-sub">${isViewToday ? todayLabel : formatDate(viewDate)}</div></div>
+        <div><div class="app-title">Journal</div><div class="date-sub">${isToday ? todayLabel : formatDate(vd)}</div></div>
         <button class="theme-toggle-btn" onclick="toggleTheme()">${state.theme === 'dark' ? '☀️' : '🌙'}</button>
       </div>
       ${allDone ? '<div class="all-done-banner">🎉 All habits done for this day!</div>' : ''}
     </div>
-    <div class="content">
+    <div class="page-content">
       <div class="date-nav">
         <button class="date-nav-btn" onclick="navDate(-1)">‹</button>
-        <div style="display:flex;align-items:center">
-          <span class="date-nav-label">${isViewToday ? 'Today' : formatDate(viewDate)}</span>
-          ${!isViewToday ? `<button onclick="goToToday()" style="margin-left:8px;background:var(--surface2);border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--text2)">Today</button>` : ''}
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="date-nav-label">${isToday ? 'Today' : formatDate(vd)}</span>
+          ${!isToday ? `<button onclick="goToToday()" style="background:var(--surface2);border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--text2)">Today</button>` : ''}
         </div>
-        <button class="date-nav-btn" onclick="navDate(1)" style="opacity:${canGoNext ? '1' : '0.3'};pointer-events:${canGoNext ? 'auto' : 'none'}">›</button>
+        <button class="date-nav-btn" onclick="navDate(1)" ${!canGoNext ? 'disabled' : ''}>›</button>
       </div>
       <div class="section-label">Habits to log</div>
-      ${state.habits.length === 0 ? `<div class="empty-state"><div class="empty-icon">🌱</div><div style="font-weight:500;margin-bottom:6px">No habits yet</div><div style="font-size:13px">Tap + to add your first habit</div></div>` : habitCards}
+      ${state.habits.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">🌱</div><div style="font-weight:500;margin-bottom:6px">No habits yet</div><div style="font-size:13px">Tap + to add your first habit</div></div>`
+        : habitCards}
     </div>
     <button class="add-fab" onclick="openAddHabit()">+</button>`;
 }
 
-// ---- PROGRESS PAGE ----
-function renderProgress() {
-  const isWeek = state.progTab === '7days';
-  const count = isWeek ? 7 : 30;
+// ──────────────────────────────────────────────
+//  BUILD: PROGRESS
+// ──────────────────────────────────────────────
+function buildProgress() {
   const today = getTodayStr();
-  const days = getDaysArray(new Date(today + 'T00:00:00'), count);
+  const count = state.progTab === '7days' ? 7 : 30;
+  const days  = getDaysArray(today, count);
+  const score = calcPeriodScore(days);
+  const bestStreak = state.habits.length ? Math.max(...state.habits.map(h => calcStreak(h.id))) : 0;
 
   const habitCards = state.habits.map(h => {
     const stats = calcHabitStats(h.id, days);
-    const dots = days.map(d => {
+    const dots  = days.map(d => {
       const st = getStatus(h.id, d);
-      let color;
-      if (st === 'done') color = h.color;
-      else if (st === 'skip') color = '#d97706';
-      else if (st === 'fail') color = '#dc2626';
-      else color = 'var(--dot-empty)';
+      const color = st === 'done' ? h.color : st === 'skip' ? '#d97706' : st === 'fail' ? '#dc2626' : 'var(--dot-empty)';
       return `<div class="dot" style="background:${color}" title="${d}"></div>`;
     }).join('');
 
     const statItems = h.type === 'measurable'
-      ? [
-          { num: stats.streak, label: 'Streak' },
-          { num: stats.done, label: 'Done' },
-          { num: stats.avg, label: 'Avg ' + h.unit },
-        ]
-      : [
-          { num: stats.streak, label: 'Streak' },
-          { num: stats.done, label: 'Done' },
-          { num: stats.skipped, label: 'Skipped' },
-        ];
+      ? [{num: stats.streak, label:'Streak'}, {num: stats.done, label:'Done'}, {num: stats.avg, label:'Avg '+h.unit}]
+      : [{num: stats.streak, label:'Streak'}, {num: stats.done, label:'Done'}, {num: stats.skipped, label:'Skipped'}];
 
     return `<div class="prog-habit-card">
       <div class="prog-habit-header">
@@ -449,85 +650,64 @@ function renderProgress() {
         <div class="prog-habit-name">${h.name}</div>
       </div>
       <div class="prog-stats-grid">
-        ${statItems.map(s => `<div class="prog-stat">
-          <div class="prog-stat-num" style="color:${h.color}">${s.num}</div>
-          <div class="prog-stat-label">${s.label}</div>
-        </div>`).join('')}
+        ${statItems.map(s => `<div class="prog-stat"><div class="prog-stat-num" style="color:${h.color}">${s.num}</div><div class="prog-stat-label">${s.label}</div></div>`).join('')}
       </div>
       ${h.type === 'non-measurable' ? `<div style="display:flex;gap:12px;margin-bottom:8px">
-        <span style="font-size:11px;color:#16a34a">✓ ${stats.done} done</span>
-        <span style="font-size:11px;color:#d97706">~ ${stats.skipped} skipped</span>
-        <span style="font-size:11px;color:#dc2626">✗ ${stats.failed} failed</span>
+        <span style="font-size:11px;color:#16a34a">✓ ${stats.done}</span>
+        <span style="font-size:11px;color:#d97706">~ ${stats.skipped}</span>
+        <span style="font-size:11px;color:#dc2626">✗ ${stats.failed}</span>
       </div>` : ''}
       <div class="dot-row">${dots}</div>
     </div>`;
   }).join('');
 
-  const weekScore = calcPeriodScore(days);
-
   return `
-    <div class="topbar">
-      <div class="topbar-row"><div><div class="app-title">Progress</div><div class="date-sub">Habit history</div></div></div>
-    </div>
-    <div class="content">
+    <div class="topbar"><div class="topbar-row"><div><div class="app-title">Progress</div><div class="date-sub">Habit history</div></div></div></div>
+    <div class="page-content">
       <div class="seg-tabs">
         <button class="seg-tab ${state.progTab==='7days'?'active':''}" onclick="setProgTab('7days')">Last 7 Days</button>
         <button class="seg-tab ${state.progTab==='30days'?'active':''}" onclick="setProgTab('30days')">Last 30 Days</button>
       </div>
       <div class="stat-cards">
-        <div class="stat-card"><div class="stat-num" style="color:#2563eb">${weekScore}%</div><div class="stat-label">Score</div></div>
-        <div class="stat-card"><div class="stat-num">${state.habits.length > 0 ? Math.max(...state.habits.map(h => calcStreak(h.id))) : 0}</div><div class="stat-label">Best Streak</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:#2563eb">${score}%</div><div class="stat-label">Score</div></div>
+        <div class="stat-card"><div class="stat-num">${bestStreak}</div><div class="stat-label">Best Streak</div></div>
         <div class="stat-card"><div class="stat-num">${state.habits.length}</div><div class="stat-label">Habits</div></div>
       </div>
       <div class="section-label">By Habit</div>
-      ${state.habits.length === 0 ? `<div class="empty-state"><div class="empty-icon">📈</div><div style="font-weight:500">No habits yet</div></div>` : habitCards}
+      ${state.habits.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">📈</div><div style="font-weight:500">No habits yet</div></div>`
+        : habitCards}
     </div>`;
 }
 
-// ---- DASHBOARD PAGE ----
-function renderDashboard() {
-  const today = getTodayStr();
-  const todayDate = new Date(today + 'T00:00:00');
+// ──────────────────────────────────────────────
+//  BUILD: DASHBOARD
+// ──────────────────────────────────────────────
+function buildDashboard(today) {
+  const last7  = getDaysArray(today, 7);
+  const prev7  = getDaysArray(addDays(today, -7), 7);
+  const last30 = getDaysArray(today, 30);
+  const prev30 = getDaysArray(addDays(today, -30), 30);
 
-  const last7 = getDaysArray(todayDate, 7);
-  const prev7 = getDaysArray(new Date(todayDate.getTime() - 7 * 86400000), 7);
-  const last30 = getDaysArray(todayDate, 30);
-  const prev30 = getDaysArray(new Date(todayDate.getTime() - 30 * 86400000), 30);
-
-  const score7 = calcPeriodScore(last7);
-  const scoreP7 = calcPeriodScore(prev7);
-  const score30 = calcPeriodScore(last30);
+  const score7   = calcPeriodScore(last7);
+  const scoreP7  = calcPeriodScore(prev7);
+  const score30  = calcPeriodScore(last30);
   const scoreP30 = calcPeriodScore(prev30);
+  const diff7    = score7 - scoreP7;
+  const diff30   = score30 - scoreP30;
 
-  const diff7 = score7 - scoreP7;
-  const diff30 = score30 - scoreP30;
-
-  function growthLabel(diff) {
-    if (diff > 0) return `↑ +${diff}% vs prev period`;
-    if (diff < 0) return `↓ ${diff}% vs prev period`;
-    return `→ Same as prev period`;
-  }
-  function growthClass(diff) {
-    if (diff > 0) return 'up';
-    if (diff < 0) return 'down';
-    return 'neutral';
-  }
-
-  // overall today score
   const todayDone = state.habits.filter(h => isDone(h.id, today)).length;
-  const todayPct = state.habits.length ? Math.round(todayDone / state.habits.length * 100) : 0;
+  const todayPct  = state.habits.length ? Math.round(todayDone / state.habits.length * 100) : 0;
 
-  // per-habit rows for last 7 days
+  const gLabel = d => d > 0 ? `↑ +${d}% vs prev` : d < 0 ? `↓ ${d}% vs prev` : `→ Same as prev`;
+  const gClass = d => d > 0 ? 'up' : d < 0 ? 'down' : 'neutral';
+
   const habitRows = state.habits.map(h => {
     const done7 = last7.filter(d => isDone(h.id, d)).length;
-    const pct7 = Math.round(done7 / 7 * 100);
-    const dots = last7.map(d => {
+    const pct7  = Math.round(done7 / 7 * 100);
+    const dots  = last7.map(d => {
       const st = getStatus(h.id, d);
-      let color;
-      if (st === 'done') color = h.color;
-      else if (st === 'skip') color = '#d97706';
-      else if (st === 'fail') color = '#dc2626';
-      else color = 'var(--dot-empty)';
+      const color = st === 'done' ? h.color : st === 'skip' ? '#d97706' : st === 'fail' ? '#dc2626' : 'var(--dot-empty)';
       return `<div class="dash-habit-dot" style="background:${color}"></div>`;
     }).join('');
 
@@ -540,77 +720,96 @@ function renderDashboard() {
   }).join('');
 
   return `
-    <div class="topbar">
-      <div class="topbar-row"><div><div class="app-title">Dashboard</div><div class="date-sub">Habit analytics</div></div></div>
-    </div>
-    <div class="content">
+    <div class="topbar"><div class="topbar-row"><div><div class="app-title">Dashboard</div><div class="date-sub">Analytics</div></div></div></div>
+    <div class="page-content">
       <div class="dash-overview">
         <div class="dash-overview-title">Today's Score</div>
         <div class="dash-overview-score">${todayPct}%</div>
-        <div class="dash-overview-sub">${todayDone} of ${state.habits.length} habits completed</div>
+        <div class="dash-overview-sub">${todayDone} of ${state.habits.length} completed</div>
       </div>
-
       <div class="dash-habits-title">Period Comparison</div>
       <div class="dash-periods">
         <div class="dash-period-card">
           <div class="dash-period-label">Last 7 Days</div>
           <div class="dash-period-score">${score7}%</div>
-          <div class="dash-period-growth ${growthClass(diff7)}">${growthLabel(diff7)}</div>
+          <div class="dash-period-growth ${gClass(diff7)}">${gLabel(diff7)}</div>
           <div style="margin-top:8px">
-            <div style="font-size:10px;color:var(--text2);margin-bottom:4px">vs prev 7 days: ${scoreP7}%</div>
+            <div style="font-size:10px;color:var(--text2);margin-bottom:4px">prev: ${scoreP7}%</div>
             <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${score7}%;background:#2563eb"></div></div>
           </div>
         </div>
         <div class="dash-period-card">
           <div class="dash-period-label">Last 30 Days</div>
           <div class="dash-period-score">${score30}%</div>
-          <div class="dash-period-growth ${growthClass(diff30)}">${growthLabel(diff30)}</div>
+          <div class="dash-period-growth ${gClass(diff30)}">${gLabel(diff30)}</div>
           <div style="margin-top:8px">
-            <div style="font-size:10px;color:var(--text2);margin-bottom:4px">vs prev 30 days: ${scoreP30}%</div>
+            <div style="font-size:10px;color:var(--text2);margin-bottom:4px">prev: ${scoreP30}%</div>
             <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${score30}%;background:#7c3aed"></div></div>
           </div>
         </div>
       </div>
-
       <div class="dash-habits-title">Last 7 Days by Habit</div>
       <div class="card" style="padding:10px 16px">
-        ${state.habits.length === 0 ? `<div class="empty-state" style="padding:20px"><div class="empty-icon">📊</div><div>No habits yet</div></div>` : habitRows}
+        ${state.habits.length === 0
+          ? `<div class="empty-state" style="padding:20px"><div class="empty-icon">📊</div><div>No habits yet</div></div>`
+          : habitRows}
       </div>
     </div>`;
 }
 
-// ---- SETTINGS PAGE ----
-function renderSettings() {
-  const rows = state.habits.map((h, idx) => `
-    <div class="card drag-card" draggable="true" data-id="${h.id}" data-idx="${idx}" style="padding:12px 16px;margin-bottom:10px;cursor:grab;touch-action:none;">
+// ──────────────────────────────────────────────
+//  BUILD: SETTINGS
+// ──────────────────────────────────────────────
+function buildSettings() {
+  const syncDotClass = state.syncStatus === 'ok' ? 'ok' : state.syncStatus === 'err' ? 'err' : state.syncStatus === 'pending' ? 'pending' : 'err';
+  const syncLabel = state.syncStatus === 'idle'
+    ? (state.binId ? 'Ready to sync' : 'Not configured')
+    : state.syncMsg;
+
+  const rows = state.habits.map(h => `
+    <div class="card" style="padding:12px 16px;margin-bottom:10px">
       <div class="habit-manage-row">
-        <div style="color:#ccc;flex-shrink:0;padding:4px;cursor:grab;" class="drag-handle-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-        </div>
         <div class="habit-icon-bg" style="background:${h.color}20;width:38px;height:38px;font-size:18px">${h.icon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name}</div>
-          <div style="font-size:11px;color:var(--text2)">${h.type === 'measurable' ? h.target + ' ' + h.unit : 'Yes/No'} · ${h.frequency} · ⏰${h.reminder}</div>
+          <div style="font-size:11px;color:var(--text2)">${h.type==='measurable'?h.target+' '+h.unit:'Yes/No'} · ${h.frequency} · ⏰${h.reminder}</div>
         </div>
         <button class="icon-action" onclick="startEdit(${h.id})">✏️</button>
         <button class="icon-action" onclick="deleteHabit(${h.id})">🗑</button>
       </div>
     </div>`).join('');
 
-  // Schedule drag-drop init after DOM update
-  setTimeout(initSettingsDragDrop, 0);
-
   return `
     <div class="topbar"><div class="app-title">Settings</div></div>
-    <div class="content">
+    <div class="page-content">
+
+      <!-- Cloud Sync Card -->
+      <div class="sync-card">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:2px">☁️ Cloud Sync</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Free sync via JSONBin.io — your data persists across devices & code changes.</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.6;background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px">
+          1. Go to <b>jsonbin.io</b> → Sign up free → Create a Bin<br>
+          2. Copy your <b>Bin ID</b> (looks like <code>64ab…</code>)<br>
+          3. Paste it below and click <b>Pull</b> to load, or <b>Push</b> to save
+        </div>
+        <div class="sync-input-row">
+          <input class="form-input" id="bin-id-input" placeholder="Paste Bin ID…" value="${state.binId}" style="flex:1;padding:10px 12px;font-size:13px" oninput="state.binId=this.value;localStorage.setItem('binId',this.value)" />
+          <button onclick="cloudPull()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--text)">↓ Pull</button>
+          <button onclick="cloudPush()" style="background:var(--text);border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--bg)">↑ Push</button>
+        </div>
+        <div class="sync-status">
+          <div class="sync-dot ${state.binId ? syncDotClass : 'err'}" style="${!state.binId?'background:var(--text3)':''}"></div>
+          <span style="font-size:12px;color:var(--text2)">${syncLabel}</span>
+        </div>
+      </div>
+
+      <!-- Theme -->
       <div class="card">
         <div class="settings-row">
           <div><div class="settings-label">Theme</div><div class="settings-sub">Light or dark display</div></div>
           <div class="seg-control" style="width:auto">
-            <button class="seg-btn ${state.theme==='light'?'active':''}" style="padding:7px 14px" onclick="setTheme('light')">☀️ Light</button>
-            <button class="seg-btn ${state.theme==='dark'?'active':''}" style="padding:7px 14px" onclick="setTheme('dark')">🌙 Dark</button>
+            <button class="seg-btn ${state.theme==='light'?'active':''}" style="padding:7px 14px" onclick="setTheme('light')">☀️</button>
+            <button class="seg-btn ${state.theme==='dark'?'active':''}" style="padding:7px 14px" onclick="setTheme('dark')">🌙</button>
           </div>
         </div>
         <div class="settings-row" style="border-bottom:none">
@@ -618,13 +817,13 @@ function renderSettings() {
           <div style="font-size:13px;color:var(--text2)">${15 - state.habits.length} left</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 6px">
-        <div class="section-label" style="margin:0">Manage Habits</div>
-        <div style="font-size:11px;color:var(--text3)">☰ hold to reorder</div>
-      </div>
-      ${state.habits.length === 0 ? `<div class="empty-state"><div class="empty-icon">🗂️</div><div style="font-weight:500">No habits yet</div></div>` : `<div id="drag-list">${rows}</div>`}
-      <button class="primary-btn" onclick="openAddHabit()" ${state.habits.length >= 15 ? 'disabled' : ''} style="margin-top:8px">+ Add New Habit</button>
-      ${state.habits.length >= 15 ? '<div style="text-align:center;font-size:12px;color:var(--text2);margin-top:8px">Maximum 15 habits reached</div>' : ''}
+
+      <div class="section-label" style="margin-top:8px">Manage Habits</div>
+      ${state.habits.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">🗂️</div><div style="font-weight:500">No habits yet</div></div>`
+        : rows}
+      <button class="primary-btn" onclick="openAddHabit()" ${state.habits.length>=15?'disabled':''} style="margin-top:8px">+ Add New Habit</button>
+
       <div class="about-card">
         <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">About</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.7">Habit Tracker · Personal edition<br>Built for focused, mindful habit building.</div>
@@ -632,83 +831,10 @@ function renderSettings() {
     </div>`;
 }
 
-function initSettingsDragDrop() {
-  const list = document.getElementById('drag-list');
-  if (!list) return;
-  const cards = list.querySelectorAll('.drag-card');
-  let dragSrcIdx = null;
-
-  cards.forEach(card => {
-    // Desktop drag
-    card.addEventListener('dragstart', e => {
-      dragSrcIdx = +card.dataset.idx;
-      setTimeout(() => card.style.opacity = '0.4', 0);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    card.addEventListener('dragend', () => {
-      card.style.opacity = '';
-      list.querySelectorAll('.drag-card').forEach(c => c.style.borderStyle = '');
-    });
-    card.addEventListener('dragover', e => {
-      e.preventDefault();
-      list.querySelectorAll('.drag-card').forEach(c => c.style.borderStyle = '');
-      card.style.borderStyle = 'dashed';
-    });
-    card.addEventListener('dragleave', () => { card.style.borderStyle = ''; });
-    card.addEventListener('drop', e => {
-      e.preventDefault();
-      card.style.borderStyle = '';
-      const targetIdx = +card.dataset.idx;
-      if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
-      const moved = state.habits.splice(dragSrcIdx, 1)[0];
-      state.habits.splice(targetIdx, 0, moved);
-      savePersist();
-      dragSrcIdx = null;
-      render();
-    });
-
-    // Touch drag
-    let touchGhost = null, touchSrcIdx = null, startY = 0;
-    card.addEventListener('touchstart', e => {
-      touchSrcIdx = +card.dataset.idx;
-      startY = e.touches[0].clientY;
-      touchGhost = card.cloneNode(true);
-      const r = card.getBoundingClientRect();
-      touchGhost.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;opacity:0.85;z-index:999;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.18);border-radius:16px;background:var(--card-bg);`;
-      document.body.appendChild(touchGhost);
-      card.style.opacity = '0.35';
-    }, { passive: true });
-    card.addEventListener('touchmove', e => {
-      e.preventDefault();
-      const dy = e.touches[0].clientY - startY;
-      const r = card.getBoundingClientRect();
-      touchGhost.style.top = (r.top + dy) + 'px';
-      touchGhost.style.display = 'none';
-      const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-      touchGhost.style.display = '';
-      list.querySelectorAll('.drag-card').forEach(c => c.style.borderStyle = '');
-      const target = el?.closest('.drag-card');
-      if (target && target !== card) target.style.borderStyle = 'dashed';
-    }, { passive: false });
-    card.addEventListener('touchend', e => {
-      if (touchGhost) { touchGhost.remove(); touchGhost = null; }
-      card.style.opacity = '';
-      list.querySelectorAll('.drag-card').forEach(c => c.style.borderStyle = '');
-      const el = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-      const target = el?.closest('.drag-card');
-      if (target && target !== card) {
-        const targetIdx = +target.dataset.idx;
-        const moved = state.habits.splice(touchSrcIdx, 1)[0];
-        state.habits.splice(targetIdx, 0, moved);
-        savePersist();
-        render();
-      }
-    });
-  });
-}
-
-// ---- HABIT FORM MODAL ----
-function renderHabitForm(data, mode, title) {
+// ──────────────────────────────────────────────
+//  BUILD: HABIT FORM
+// ──────────────────────────────────────────────
+function buildHabitForm(data, mode, title) {
   const isEdit = mode === 'edit';
   return `
     <div class="modal-overlay" onclick="closeModal(event,this)">
@@ -727,7 +853,7 @@ function renderHabitForm(data, mode, title) {
         </div>
         ${data.type === 'measurable' ? `
         <div class="form-group">
-          <label class="form-label">Target & Unit</label>
+          <label class="form-label">Target &amp; Unit</label>
           <div class="form-row">
             <input class="form-input" type="number" placeholder="10" value="${data.target || ''}" oninput="updateForm('target',this.value,'${mode}')" style="width:35%" />
             <input class="form-input" placeholder="km, pages…" value="${data.unit || ''}" oninput="updateForm('unit',this.value,'${mode}')" style="flex:1" />
@@ -736,7 +862,7 @@ function renderHabitForm(data, mode, title) {
         <div class="form-group">
           <label class="form-label">Frequency</label>
           <div class="seg-control">
-            ${['daily', 'weekly', 'monthly'].map(f => `<button class="seg-btn ${data.frequency===f?'active':''}" onclick="updateForm('frequency','${f}','${mode}')">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}
+            ${['daily','weekly','monthly'].map(f => `<button class="seg-btn ${data.frequency===f?'active':''}" onclick="updateForm('frequency','${f}','${mode}')">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}
           </div>
         </div>
         <div class="form-group">
@@ -757,25 +883,21 @@ function renderHabitForm(data, mode, title) {
         </div>
         <div class="form-row" style="margin-top:8px;gap:10px">
           <button class="ghost-btn" style="flex:1" onclick="cancelModal()">Cancel</button>
-          <button class="primary-btn" style="flex:2" onclick="${isEdit ? 'saveEdit()' : 'saveNewHabit()'}">Save Habit</button>
+          <button class="primary-btn" style="flex:2" onclick="${isEdit?'saveEdit()':'saveNewHabit()'}">Save Habit</button>
         </div>
       </div>
     </div>`;
 }
 
-// ---- ACTIONS ----
-window.toggleTheme = () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; savePersist(); render(); };
-window.setTheme = (t) => { state.theme = t; savePersist(); render(); };
+// ──────────────────────────────────────────────
+//  GLOBAL ACTIONS
+// ──────────────────────────────────────────────
+window.toggleTheme = () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; saveLocal(); render(); };
+window.setTheme    = t => { state.theme = t; saveLocal(); render(); };
 
-window.navDate = (dir) => {
-  const d = new Date(state.viewDate + 'T00:00:00');
-  d.setDate(d.getDate() + dir);
-  const next = getDateStr(d);
-  // Allow going back freely, allow going forward only if result is not past today
-  if (next <= getTodayStr()) {
-    state.viewDate = next;
-    render();
-  }
+window.navDate = dir => {
+  const next = addDays(state.viewDate, dir);
+  if (next <= getTodayStr()) { state.viewDate = next; render(); }
 };
 window.goToToday = () => { state.viewDate = getTodayStr(); render(); };
 
@@ -786,7 +908,7 @@ window.setStatus = (id, status, date) => {
   if (newStatus === null) delete state.logs[id][date];
   else state.logs[id][date] = { status: newStatus };
   if (newStatus === 'done') notify(state.habits.find(h => h.id === id)?.name + ' ✓');
-  savePersist(); render();
+  saveLocal(); schedulePush(); render();
 };
 
 window.updateMeasure = (id, val, date) => {
@@ -795,42 +917,46 @@ window.updateMeasure = (id, val, date) => {
   const h = state.habits.find(x => x.id === id);
   if (!state.logs[id]) state.logs[id] = {};
   state.logs[id][date] = { value: val, done: h && parseFloat(val) >= h.target };
-  savePersist();
-  // Update progress bar imperatively without full re-render (prevents input focus loss)
-  const pct = h && h.target ? Math.min(100, (parseFloat(val) || 0) / h.target * 100) : 0;
-  const bar = document.querySelector(`[data-prog-id="${id}"]`);
-  if (bar) bar.style.width = pct + '%';
+  saveLocal(); schedulePush(); render();
 };
 
-window.setProgTab = (tab) => { state.progTab = tab; render(); };
-
+window.setProgTab  = tab => { state.progTab = tab; render(); };
 window.openAddHabit = () => { state.showAddHabit = true; render(); };
-window.cancelModal = () => { state.showAddHabit = false; state.editHabit = null; render(); };
-window.closeModal = (e, el) => { if (e.target === el) cancelModal(); };
+window.cancelModal  = () => { state.showAddHabit = false; state.editHabit = null; render(); };
+window.closeModal   = (e, el) => { if (e.target === el) cancelModal(); };
+
 window.updateForm = (key, val, mode) => {
   if (mode === 'edit') state.editHabit = { ...state.editHabit, [key]: val };
   else state.newHabit = { ...state.newHabit, [key]: val };
-  // Only re-render for non-text fields (type, color, icon, frequency) to avoid input focus loss
-  const noRerenderKeys = ['name', 'target', 'unit', 'reminder'];
-  if (!noRerenderKeys.includes(key)) render();
+  render();
 };
+
 window.saveNewHabit = () => {
   if (!state.newHabit.name.trim()) return;
   state.habits.push({ ...state.newHabit, id: Date.now(), target: parseFloat(state.newHabit.target) || 0 });
-  state.newHabit = { name: '', type: 'non-measurable', frequency: 'daily', unit: '', target: '', reminder: '08:00', color: '#2563eb', icon: '🎯' };
-  state.showAddHabit = false; savePersist(); notify('Habit added!'); render();
+  state.newHabit = {name:'',type:'non-measurable',frequency:'daily',unit:'',target:'',reminder:'08:00',color:'#2563eb',icon:'🎯'};
+  state.showAddHabit = false;
+  saveLocal(); schedulePush(); notify('Habit added!'); render();
 };
-window.startEdit = (id) => { state.editHabit = { ...state.habits.find(h => h.id === id) }; render(); };
+
+window.startEdit = id => { state.editHabit = { ...state.habits.find(h => h.id === id) }; render(); };
+
 window.saveEdit = () => {
-  state.habits = state.habits.map(h => h.id === state.editHabit.id ? { ...state.editHabit, target: parseFloat(state.editHabit.target) || 0 } : h);
-  state.editHabit = null; savePersist(); notify('Habit updated!'); render();
+  state.habits = state.habits.map(h => h.id === state.editHabit.id
+    ? { ...state.editHabit, target: parseFloat(state.editHabit.target) || 0 } : h);
+  state.editHabit = null;
+  saveLocal(); schedulePush(); notify('Habit updated!'); render();
 };
-window.deleteHabit = (id) => {
+
+window.deleteHabit = id => {
   if (!confirm('Delete this habit?')) return;
-  state.habits = state.habits.filter(h => h.id !== id); savePersist(); notify('Habit removed.'); render();
+  state.habits = state.habits.filter(h => h.id !== id);
+  saveLocal(); schedulePush(); notify('Habit removed.'); render();
 };
+
 window.setPage = setPage;
 
+// ── Boot ──
 render();
 
 if ('serviceWorker' in navigator) {
